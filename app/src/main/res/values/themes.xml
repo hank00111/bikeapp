@@ -2,7 +2,7 @@
     <!-- Base application theme. -->
     <style name="Theme.Bike" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Primary brand color. -->
-        <item name="colorPrimary">#DAC9A6</item>
+        <item name="colorPrimary">#967249</item>
         <item name="colorPrimaryVariant">#91B493</item>
         <item name="colorOnPrimary">@color/white</item>
         <!-- Secondary brand color. -->
