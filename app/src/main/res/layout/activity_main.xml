@@ -10,14 +10,29 @@
         android:id="@+id/Wifist"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello World!"
-        android:textSize="16dp"
+        android:layout_marginStart="5dp"
+        android:layout_marginTop="5dp"
+        android:foregroundGravity="left"
+        android:text="un"
+        android:textSize="14sp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintHorizontal_bias="0.498"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/textView3"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.141" />
+        app:layout_constraintVertical_bias="0.022" />
+
+    <Button
+        android:id="@+id/Bt4"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="5dp"
+        android:onClick="onClic4"
+        android:text="En"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/Bt3"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/Bt1"
+        app:layout_constraintVertical_bias="0.035" />
 
     <Button
         android:id="@+id/Bt1"
@@ -25,54 +40,78 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="10dp"
         android:layout_marginEnd="5dp"
+        android:onClick="onClic1"
         android:text="Button"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/Bt2"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.337"
-        android:onClick="onClic1"/>
+        app:layout_constraintVertical_bias="0.434" />
 
     <Button
         android:id="@+id/Bt2"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="10dp"
-        android:layout_marginEnd="10dp"
+        android:onClick="onClic2"
         android:text="Button"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/Bt3"
         app:layout_constraintStart_toEndOf="@+id/Bt1"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.337"
-        android:onClick="onClic2"/>
+        app:layout_constraintVertical_bias="0.434" />
 
     <Button
         android:id="@+id/Bt3"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="5dp"
-        android:layout_marginEnd="5dp"
+        android:layout_marginStart="10dp"
+        android:onClick="onClic3"
         android:text="Button"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/Bt4"
-        app:layout_constraintStart_toEndOf="@+id/Bt2"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.337"
-        android:onClick="onClic3"/>
+        app:layout_constraintStart_toEndOf="@+id/Bt4"
+        app:layout_constraintTop_toBottomOf="@+id/Bt2"
+        app:layout_constraintVertical_bias="0.035" />
 
-    <Button
-        android:id="@+id/Bt4"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="5dp"
+    <NumberPicker
+        android:id="@+id/number_picker"
+        android:layout_width="90dp"
+        android:layout_height="176dp"
+        android:layout_marginTop="20dp"
         android:layout_marginEnd="10dp"
-        android:text="Button"
+        android:descendantFocusability="afterDescendants"
+        android:drawingCacheQuality="auto"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/Bt3"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.337"
-        android:onClick="onClic4"/>
+        app:layout_constraintVertical_bias="0.0" />
+
+    <TextView
+        android:id="@+id/Modest"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/mode"
+        app:layout_constraintBottom_toBottomOf="@+id/number_picker"
+        app:layout_constraintEnd_toStartOf="@+id/number_picker"
+        app:layout_constraintHorizontal_bias="0.941"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/number_picker"
+        app:layout_constraintVertical_bias="0.493" />
+
+    <TextView
+        android:id="@+id/textView3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginEnd="5dp"
+        android:text="Wifi Status:"
+        android:textSize="17sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/Wifist"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.022" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

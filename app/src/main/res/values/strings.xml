@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Bike</string>
+    <string name="mode">Mode:</string>
 </resources>
