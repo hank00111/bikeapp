@@ -1,5 +1,6 @@
 package com.example.bike;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
@@ -11,12 +12,15 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.NumberPicker;
 import android.widget.TextView;
 import android.net.wifi.WifiManager;
 import android.widget.Toast;
+
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.io.DataOutputStream;
 import java.net.Socket;
@@ -49,11 +53,18 @@ public class MainActivity extends AppCompatActivity {
 
     private Thread thread1;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         getGPSpermission();
+        setMain();
+
+        BottomNavigationView navigation = findViewById(R.id.navigation);
+        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
+
+
         tv1 = (TextView) findViewById(R.id.Wifist);
         bt1 = findViewById(R.id.Bt1);
         bt2 = findViewById(R.id.Bt2);
@@ -74,6 +85,32 @@ public class MainActivity extends AppCompatActivity {
                     tv1.setText("selected number " + numberPicker.getValue());
                 }
             };
+
+
+
+    private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
+            = new BottomNavigationView.OnNavigationItemSelectedListener() {
+
+        @Override
+        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+            switch (item.getItemId()) {
+                case R.id.home:  //我上一篇的menu裡面設的id
+                    getSupportFragmentManager().beginTransaction().replace(R.id.frameLayout,new Home()).commit();  //切換fragment
+                    return true;
+                case R.id.Timer:
+                    getSupportFragmentManager().beginTransaction().replace(R.id.frameLayout,new Timer()).commit();  //切換fragment
+                    return true;
+
+            }
+            return false;
+        }
+    };
+
+
+    private void setMain() {  //這個副程式用來設置顯示剛進來的第一個主畫面
+
+        this.getSupportFragmentManager().beginTransaction().add(R.id.frameLayout,new Home()).commit();
+    }
 
 
     public void getGPSpermission() {
