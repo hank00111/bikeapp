@@ -120,7 +120,7 @@ public class MainActivity extends AppCompatActivity {
 
         stpthred = true;
 
-        thread1.interrupt();
+        //thread1.interrupt();
         /*new Thread() {
             public void run() {
                 try {
@@ -142,17 +142,26 @@ public class MainActivity extends AppCompatActivity {
     public void onClic4(View view) {
         setbtn(4);
         stpthred = false;
-        ExRunnable runnable = new ExRunnable(20);
+        ExRunnable runnable = new ExRunnable(4);
         new  Thread(runnable).start();
 
         thread1 = new Thread(){
             @Override
             public void run() {
                 for (j = 0; j<1000;j++){
+
                     if (stpthred){
+                        conHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                tv1.setText("Connection Timeout");
+                            }
+                        });
+
                         Log.d(TAG,"Close Thread1");
                         return;
                     }
+
                     try {
                         SimpleDateFormat format = new SimpleDateFormat("HH:mm:ss");
                         t =format.format(new Date());
@@ -160,14 +169,16 @@ public class MainActivity extends AppCompatActivity {
                     }catch (InterruptedException e){
                         e.printStackTrace();
                     }
+
                     x+=1;
                     if (x==4)
                         x=0;
+
                     conHandler.post(new Runnable() {
                         @Override
                         public void run() {
                             String [] strings = {"",".", ".." ,"..."};
-                            tv1.setText("Connecting" + strings[x]);
+                            tv1.setText("Connecting" + strings[x] + j);
 
                         }
                     });
@@ -245,22 +256,38 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 try {
-                    if (i == 5) {
+                    /*if (i == 5) {
                         mainHandler.post(new Runnable() {
                             @Override
                             public void run() {
                                 tv1.setText("5");
                             }
                         });
-                    }
+                    }*/
                     //SimpleDateFormat format = new SimpleDateFormat("HH:mm:ss");
                     //String t =format.format(new Date());
+
+
                     Log.d(TAG, "connecting: " + i);
                     socket = new Socket("192.168.4.1", 4567);
 
 
-                    Thread.sleep(50);
+                    if(socket.isConnected()){
+                        mainHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                tv1.setText("Connected");
+                            }
+                        });
+                    }
+
+
+                    //Thread.sleep(50);
                 } catch (Exception e) {
+                    if(i==2){
+                        stpthred = true;
+                    }
+                    //thread1.interrupt();
                     Log.i("MainActivity", "Faile");
                     //e.printStackTrace();
                 }
