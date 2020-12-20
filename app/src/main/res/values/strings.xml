@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">Bike</string>
     <string name="mode">Mode:</string>
+    <string name="timeclock">0:00:00</string>
 </resources>

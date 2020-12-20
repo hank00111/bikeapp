@@ -5,16 +5,20 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.net.wifi.WifiInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.PersistableBundle;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Chronometer;
 import android.widget.NumberPicker;
 import android.widget.TextView;
 import android.net.wifi.WifiManager;
@@ -33,27 +37,40 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
     private static WifiManager mWifiManager;
 
     private WifiInfo wifiInfo;
-    private Button bt1, bt2, bt3, bt4;
-    private TextView tv1;
+    private Button bt1, bt2, bt3, bt4,btstart, btpause,btreset;
+    private TextView tv1,time_clock;
     private Socket socket;
-    private String t;
-    private int i,j ,x;
+    private String t, time;
+    private int i, j, x, csec, cmin, cmsec;
+    private long tmsec,tStart,tBuff,tUpdate = 0L;
 
     private  static  final  String TAG = "MainActivity";
 
     private Handler mainHandler = new Handler();
     private Handler conHandler = new Handler();
+    private Handler timeHandler = new Handler();
+    private Handler timeHandler2 = new Handler();
+
 
     private  volatile boolean stpthred = false;
+    private boolean running;
+    private  boolean wasRunning;
 
-    private Thread thread1;
+    private Thread thread1, thread2;
+    private Runnable runnable;
+
+    //private Chronometer mChronometer;
 
 
+
+
+    @SuppressLint("WrongViewCast")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -70,14 +87,64 @@ public class MainActivity extends AppCompatActivity {
         bt2 = findViewById(R.id.Bt2);
         bt3 = findViewById(R.id.Bt3);
         bt4 = findViewById(R.id.Bt4);
+
+        btstart = findViewById(R.id.start);
+        btpause = findViewById(R.id.stop);
+        btreset = findViewById(R.id.reset);
+        time_clock = findViewById(R.id.timeclock);
+
+        //
         NumberPicker numberPicker = findViewById(R.id.number_picker);
         String[] values = {"Bike", "Low", "Mid", "High"};
         numberPicker.setDisplayedValues(values);
         numberPicker.setMinValue(0);
         numberPicker.setMaxValue(3);
         numberPicker.setOnValueChangedListener(onValueChangeListener);
+        //
 
     }
+
+
+    public void onStart(View view){
+        //TextView time_clock = (TextView)findViewById(R.id.timeclock);
+        //time_clock.setText("time");
+        //runTimer();
+        //super.onStart();
+        //timeHandler = new Handler();
+        //timeHandler.post(myRunnable);
+        //startTimerThread();
+        //running = true;
+        //time_clock.setText("123");
+        /*thread2 = new Thread(){
+            @Override
+            public void run() {
+
+
+                    time = String.format(Locale.getDefault(),"%02d",csec);
+                    timeHandler2.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            time_clock.setText("time");
+                        }
+                    });
+
+            }
+        };
+        thread2.start();*/
+        //timeHandler.postDelayed(myRunnable, 10);
+    }
+    public void onStop(View view){
+
+        running = false;
+    }
+    public void onReset(View view){
+        csec = 0;
+        running = false;
+        //super.onStop();
+        timeHandler.postDelayed(runnable,10);
+    }
+
+
     NumberPicker.OnValueChangeListener onValueChangeListener =
             new NumberPicker.OnValueChangeListener(){
                 @Override
@@ -94,7 +161,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public boolean onNavigationItemSelected(@NonNull MenuItem item) {
             switch (item.getItemId()) {
-                case R.id.home:  //我上一篇的menu裡面設的id
+                case R.id.home:
                     getSupportFragmentManager().beginTransaction().replace(R.id.frameLayout,new Home()).commit();  //切換fragment
                     return true;
                 case R.id.Timer:
@@ -106,8 +173,7 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-
-    private void setMain() {  //這個副程式用來設置顯示剛進來的第一個主畫面
+    private void setMain() {
 
         this.getSupportFragmentManager().beginTransaction().add(R.id.frameLayout,new Home()).commit();
     }
@@ -119,6 +185,7 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
         }
     }
+
 
 
     public void onClic1(View view) {
@@ -154,9 +221,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void onClic3(View view) {
         setbtn(3);
-
         stpthred = true;
-
         //thread1.interrupt();
         /*new Thread() {
             public void run() {
@@ -186,7 +251,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 for (j = 0; j<1000;j++){
-
                     if (stpthred){
                         conHandler.post(new Runnable() {
                             @Override
@@ -198,7 +262,6 @@ public class MainActivity extends AppCompatActivity {
                         Log.d(TAG,"Close Thread1");
                         return;
                     }
-
                     try {
                         SimpleDateFormat format = new SimpleDateFormat("HH:mm:ss");
                         t =format.format(new Date());
@@ -206,11 +269,9 @@ public class MainActivity extends AppCompatActivity {
                     }catch (InterruptedException e){
                         e.printStackTrace();
                     }
-
                     x+=1;
                     if (x==4)
                         x=0;
-
                     conHandler.post(new Runnable() {
                         @Override
                         public void run() {
@@ -219,14 +280,11 @@ public class MainActivity extends AppCompatActivity {
 
                         }
                     });
-
                     Log.d(TAG,t+" "+j +" "+x);
                 }
             }
         };
         thread1.start();
-        //ExThread thread = new ExThread(10);
-        //thread.start();
     }
 
     public void setbtn(int ty) {
