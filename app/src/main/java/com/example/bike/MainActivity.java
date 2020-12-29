@@ -5,20 +5,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.net.wifi.WifiInfo;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Looper;
-import android.os.PersistableBundle;
-import android.os.SystemClock;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
-import android.widget.Chronometer;
 import android.widget.NumberPicker;
 import android.widget.TextView;
 import android.net.wifi.WifiManager;
@@ -26,20 +21,18 @@ import android.widget.Toast;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
-import java.io.DataOutputStream;
+import java.io.BufferedWriter;
+import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.net.InetAddress;
-import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -51,11 +44,15 @@ public class MainActivity extends AppCompatActivity {
     private WifiInfo wifiInfo;
     private Button bt1, bt2, bt3, bt4,btstart, btpause,btreset;
     private TextView tv1,time_clock;
+
     private Socket socket;
-    private String time;
+    private InetSocketAddress socketAdr;
+    private OutputStream SetmodeStream;
+    private String time, Setmode, hex;
     private String SSID;
     private int i, j, x, t, csec, cmin, cmsec;
     private long tmsec,tStart,tBuff,tUpdate = 0L;
+
 
     private  static  final  String TAG = "MainActivity";
 
@@ -72,9 +69,13 @@ public class MainActivity extends AppCompatActivity {
     private boolean running;
     private boolean wasRunning;
     private boolean teed;
+    private boolean ssz = true;
 
     private Thread thread1, thread2;
     private Runnable runnable;
+
+    //
+    public static final int BUFFER_SIZE = 2048;
 
     //private Chronometer mChronometer;
 
@@ -85,6 +86,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         getGPSpermission();
         setMain();
+        t = 1;
 
         BottomNavigationView navigation = findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
@@ -158,7 +160,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onValueChange(NumberPicker numberPicker, int i, int i1) {
                     t = numberPicker.getValue();
-                    Log.d(TAG, String.valueOf(t));
+                    wifiThreadPool.submit(new Setmodefun(t));
                     tv1.setText("selected number " + numberPicker.getValue());
                 }
             };
@@ -211,6 +213,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onClic2(View view) {
+        ssz = false;
         //setbtn(2);
         /*new Thread() {
             public void run() {
@@ -230,9 +233,29 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onClic3(View view) throws IOException {
-        setbtn(3);
-        stpthred = true;
-        teed = true;
+        wifiThreadPool.submit(new Recv());
+        //try {
+          //  while (ssz){
+                /*BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                //System.out.println("server get input from client socket..");
+                String txt="Sever send:"+reader.readLine();
+                Log.w(TAG,txt);*/
+            //    PrintWriter out = new PrintWriter(new BufferedWriter(
+              //          new OutputStreamWriter(socket.getOutputStream())), true);
+                //System.out.println(out);
+                /*DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
+                String response = dataInputStream.readUTF();
+                BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                response = br.readLine();
+                Log.w(TAG,response);*/
+            //}
+        //}catch (IOException e){
+          //  e.printStackTrace();
+        //}
+
+        //setbtn(3);
+        //stpthred = true;
+        //teed = true;
         //socket.close();
         //thread1.interrupt();
         /*new Thread() {
@@ -339,13 +362,9 @@ public class MainActivity extends AppCompatActivity {
 
         }
     }
-    public void SwichMode(int SetMod){
-        switch (SetMod){
-            case 0:
-                String Setmode = "Mode1";
-        }
-    }
+    public void SwichMode(int SetMod) {
 
+    }
 
     public String getWifiStateStr() {
         switch (mWifiManager.getWifiState()) {
@@ -364,7 +383,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public class  ExRunnable implements  Runnable{
+    public class ExRunnable implements  Runnable{
         int sec;
         ExRunnable(int sec){
             this.sec = sec;
@@ -400,14 +419,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public class  SocketConn implements  Runnable{
+    public class SocketConn implements  Runnable{
         @Override
         public void run() {
             //add for
-            String ss = '"'+"bike"+'"';
-            wifiThreadPool.execute(new SocketConnTime());
-
-            for(csec = 0; csec<=50;csec++){
+            String ss = '"'+"ankleCuff_test"+'"';
+            for(csec = 0; csec<=10000;csec++){
                 if (stpthred){
                     Log.d(TAG,"Close Thread");
                     wifiThreadPool.shutdown();
@@ -418,26 +435,30 @@ public class MainActivity extends AppCompatActivity {
                     wifiInfo = mWifiManager.getConnectionInfo();
                     SSID = wifiInfo.getSSID();
                     Log.d(TAG, "connecting: " + csec +SSID);
-                    //Log.i("MainActivity",SSID+" "+ss);
                     nobike = false;
                     if(ss.equals(ss)){
                         //IsConnt = socket.isConnected();
                         if(IsConnt == true){
                             Log.e(TAG,"OK");
-                            Log.i("MainActivity",SSID+" "+ss);
+                            Log.i("MainActivity",SSID+" "+ss +" "+IsConnt);
                             nobike = true;
                         }else {
+                            nobike = false;
                             //sleep(15000);
-                            IsConnt = true;
-                            sleep(15000);
-                            //socket = new Socket("192.168.4.1", 4567);
-                            //IsConnt = socket.isConnected();
+                            //IsConnt = true;
+                            wifiThreadPool.submit(new SocketConnTime());
+                            socketAdr = new InetSocketAddress("192.168.4.1",49152);
+                            socket = new Socket();
+                            socket.connect(socketAdr,30000);
+                            nobike = true;
+                            IsConnt = socket.isConnected();
                             Log.d(TAG,"CCCCCCCCCCOOOOONNN");
                         }
                     }else {
                         //stpthred = true;
                         nobike = true;
-                        wifiThreadPool.execute(new SocketConnTime());
+                        IsConnt = false;
+                        wifiThreadPool.submit(new SocketConnTime());
                         conHandler.post(new Runnable() {
                             @Override
                             public void run() {
@@ -446,10 +467,12 @@ public class MainActivity extends AppCompatActivity {
                             }
                         });
                     }
-                    sleep(5000);
                 }catch (Exception e){
-                    Log.i("MainActivity", "ConnFaile");
+                    Log.i("MainActivity", "ConnFaile" +" "+ t);
+                    nobike = true;
+                    sleep(500);
                 }
+                sleep(2000);
             }
         }
     }
@@ -459,7 +482,7 @@ public class MainActivity extends AppCompatActivity {
         public void run() {
             for (j = 0; j<100000; j++){
                 if (nobike){
-                    Log.d(TAG,"Close Thread SocketConnTime");
+                    Log.d(TAG,"Close Thread SocketConnTime"+" "+IsConnt);
                     //wifiThreadPool.shutdown();
                     //socket.close();
                     return;
@@ -478,47 +501,156 @@ public class MainActivity extends AppCompatActivity {
                             tv1.setText("Connected");
                             Toast.makeText(MainActivity.this,"Connected",Toast.LENGTH_LONG).show();
                             return;
-                        }else {
-                            new SocketConn();
                         }
                     }
                 });
-                Log.d(TAG,t+" "+j +" "+x);
+                Log.d(TAG,j +" "+x);
 
             }
 
-            /*for (j = 0; j<1000;j++){
-                if (stpthred){
-                    conHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            tv1.setText("Connection Timeout");
-                        }
-                    });
-                    Log.d(TAG,"Close Thread1");
-                    return;
-                }
-                try {
-                    SimpleDateFormat format = new SimpleDateFormat("HH:mm:ss");
-                    t =format.format(new Date());
-                    Thread.sleep(800);
-                }catch (InterruptedException e){
-                    e.printStackTrace();
-                }
-                x+=1;
-                if (x==4)
-                    x=0;
-                conHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        String [] strings = {"",".", ".." ,"..."};
-                        tv1.setText("Connecting" + strings[x] + j);
-                    }
-                });
-                Log.d(TAG,t+" "+j +" "+x);
-            }*/
         }
     }
+
+    public class Setmodefun implements Runnable{
+        int setmode;
+        Setmodefun(int setmode){this.setmode = setmode;}
+        @Override
+        public void run() {
+            switch (setmode){
+                case 0:
+                    try {
+                        SetmodeStream = socket.getOutputStream();
+                        Setmode = "X";
+                        SetmodeStream.write((Setmode+"\n").getBytes("utf-8"));
+                        SetmodeStream.flush();
+                        Log.e(TAG,Setmode+SetmodeStream);
+                    }catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                case 1:
+                    try {
+                        SetmodeStream = socket.getOutputStream();
+                        Setmode = "Y";
+                        SetmodeStream.write((Setmode+"\n").getBytes("utf-8"));
+                        SetmodeStream.flush();
+                        Log.e(TAG,Setmode+SetmodeStream);
+                    }catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                case 2:
+                    try {
+                        SetmodeStream = socket.getOutputStream();
+                        Setmode = "Z";
+                        SetmodeStream.write((Setmode+"\n").getBytes("utf-8"));
+                        SetmodeStream.flush();
+                        Log.e(TAG,Setmode+SetmodeStream);
+                    }catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                case 3:
+                    try {
+                        SetmodeStream = socket.getOutputStream();
+                        Setmode = "D";
+                        SetmodeStream.write((Setmode+"\n").getBytes("utf-8"));
+                        SetmodeStream.flush();
+                        Log.e(TAG,Setmode+SetmodeStream);
+                    }catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+            }
+        }
+    }
+
+    public class Recv implements Runnable{
+        @Override
+        public void run() {
+            StringBuffer buffer = new StringBuffer();
+            byte[] bytes =new byte[1024];
+            while (ssz){
+                try {
+                    //BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                    //String ascii = reader.readLine();
+                    //String txt="Sever send:";
+                    //InputStream stream = socket.getInputStream();
+                    //byte[] data = new byte[30];
+                    //StringBuffer buffer = new StringBuffer();
+                    //InputStream stream = socket.getInputStream();
+                    //InputStream input = null;
+                    //input = new DataInputStream(socket.getInputStream());
+                    BufferedReader br = new BufferedReader(
+                            new InputStreamReader(socket.getInputStream()));
+                    char[] m = new char[10];
+                    br.read(m);
+                    //byteToHex(br);
+                    //String rec_msg = new String(m);
+                    bytes[i] = (byte)m[i];
+                    //BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                    //String clientInputStr = input.readUTF();
+                    for (int i = 0; i < m.length; i++) {
+                        hex = String.format("%02X", (int) m[i]);
+                        bytes[i] = (byte)m[i];
+                    }
+                    for (int i = 0; i < hex.length(); i+=2) {
+                        String str = hex.substring(i, i+2);
+                        buffer.append((char)Integer.parseInt(str, 16));
+                    }
+
+                    System.out.println(buffer);
+                    //ystem.out.println("客戶端發過來的內容:" + clientInputStr);
+                    //String receipt = new String(String.valueOf(stream.read()));
+                    //buffer = new StringBuffer(String.valueOf(stream.read(bytes)));
+                    //System.out.println("got receipt:" + bytes);
+
+                    //String str;
+                    /*while ((str = receipt) != null) {
+                        buffer.append(str);
+                        System.out.println(buffer.toString());
+                    }*/
+                    /*BufferedReader br = null;
+                    br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                    StringBuffer buffer = new StringBuffer();
+
+                    String str;
+                    while ((str = br.readLine()) != null) {
+                        buffer.append(str);
+                        System.out.println(buffer.toString());
+                    }*/
+
+                    //InputStream stream = socket.getInputStream();
+                    //byte[] bytes =new byte[1024];
+                    //stream.read(bytes);
+                    //String str = new String(bytes,0,bytes.length);
+                    //int count = stream.read(data);
+                    //Log.w(TAG, str);
+                    sleep(500);
+                    //InputStream in = socket.getInputStream();
+                    //byte[] rebyte = new byte[1024];
+                    //in.read(rebyte);
+                    //String str2 = new String(new String(rebyte));
+                    //Log.w(TAG,str2);
+                    //int size = input.read(tmpData); // size 是讀取到的字節數，tmpData[]即為接收到之byte array
+                    //Log.v("Socket-size", String.valueOf(size));
+                }catch (IOException e) {
+                    //System.out.println("close");
+                    ssz=false;
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    public static String byteToHex(byte b) {
+        String hex = Integer.toHexString(b & 0xFF);
+        if (hex.length() < 2) {
+            hex = "0" + hex;
+        }
+        return hex;
+    }
+
 
 
 }
