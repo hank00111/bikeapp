@@ -7,6 +7,7 @@ import androidx.core.app.ActivityCompat;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.net.wifi.WifiInfo;
 import android.os.Bundle;
 import android.os.Handler;
@@ -19,20 +20,29 @@ import android.widget.TextView;
 import android.net.wifi.WifiManager;
 import android.widget.Toast;
 
+import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.io.BufferedReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -50,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
     private OutputStream SetmodeStream;
     private String time, Setmode, hex;
     private String SSID;
-    private int i, j, x, t, csec, cmin, cmsec;
+    private int i, j, x, t, csec, cmin, cmsec, xz;
     private long tmsec,tStart,tBuff,tUpdate = 0L;
 
 
@@ -60,7 +70,7 @@ public class MainActivity extends AppCompatActivity {
     private Handler conHandler = new Handler();
     private Handler timeHandler = new Handler();
     private Handler timeHandler2 = new Handler();
-    private ExecutorService wifiThreadPool;
+    private ExecutorService wifiThreadPool ,RecvThreadPoll ;
 
     private volatile boolean stpthred = false;
     private volatile boolean nobike = false;
@@ -71,13 +81,10 @@ public class MainActivity extends AppCompatActivity {
     private boolean teed;
     private boolean ssz = true;
 
-    private Thread thread1, thread2;
-    private Runnable runnable;
+    private LineChart lineChart;
 
-    //
-    public static final int BUFFER_SIZE = 2048;
 
-    //private Chronometer mChronometer;
+
 
 
     @Override
@@ -87,10 +94,11 @@ public class MainActivity extends AppCompatActivity {
         getGPSpermission();
         setMain();
         t = 1;
-
+        //private Chronometer mChronometer;
         BottomNavigationView navigation = findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
         wifiThreadPool = Executors.newCachedThreadPool();
+        RecvThreadPoll = Executors.newCachedThreadPool();
         wifiThreadPool.execute(new SocketConn());
 
         tv1 = (TextView) findViewById(R.id.Wifist);
@@ -103,6 +111,8 @@ public class MainActivity extends AppCompatActivity {
         btpause = findViewById(R.id.stop);
         btreset = findViewById(R.id.reset);
         time_clock = (TextView)findViewById(R.id.timeclock);
+        //
+        lineChart = findViewById(R.id.Recv_wave);
 
         //
         NumberPicker numberPicker = findViewById(R.id.number_picker);
@@ -112,6 +122,8 @@ public class MainActivity extends AppCompatActivity {
         numberPicker.setMaxValue(3);
         numberPicker.setOnValueChangedListener(onValueChangeListener);
         //
+
+
 
     }
 
@@ -198,6 +210,36 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void text_all(ArrayList<Entry> val1) {
+        XAxis xAxis = lineChart.getXAxis();
+        YAxis leftYAxis = lineChart.getAxisLeft();
+        LineDataSet set1;
+
+        //xAxis.setGranularity(10f);
+        xAxis.setAxisMaximum(300f);
+        xAxis.setLabelCount(10, true);
+
+        leftYAxis.setAxisMinimum(-180f);
+        leftYAxis.setAxisMaximum(180f);
+
+        set1 = new LineDataSet(val1,"Date");
+        set1.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+        set1.setColor(Color.BLACK);
+        set1.setLineWidth(2);
+        set1.setDrawFilled(false);
+        set1.setDrawCircles(false);
+        set1.setDrawValues(false);
+
+
+
+        LineData datas = new LineData(set1);
+        lineChart.setData(datas);
+        lineChart.invalidate();
+        lineChart.getDescription().setEnabled(false);
+        lineChart.getAxisRight().setDrawLabels(false);
+
+
+    }
 
 
     public void onClic1(View view) {
@@ -233,7 +275,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onClic3(View view) throws IOException {
-        wifiThreadPool.submit(new Recv());
+
+        RecvThreadPoll.execute(new Recv());
+        ArrayList<Entry> val1 = new ArrayList<>();
+        val1.add(new Entry(0,0));
+
+
         //try {
           //  while (ssz){
                 /*BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -275,6 +322,7 @@ public class MainActivity extends AppCompatActivity {
         }.start();
         */
     }
+
 
     public void onClic4(View view) {
         //setbtn(4);
@@ -362,9 +410,6 @@ public class MainActivity extends AppCompatActivity {
 
         }
     }
-    public void SwichMode(int SetMod) {
-
-    }
 
     public String getWifiStateStr() {
         switch (mWifiManager.getWifiState()) {
@@ -436,7 +481,7 @@ public class MainActivity extends AppCompatActivity {
                     SSID = wifiInfo.getSSID();
                     Log.d(TAG, "connecting: " + csec +SSID);
                     nobike = false;
-                    if(ss.equals(ss)){
+                    if(SSID.equals(ss)){
                         //IsConnt = socket.isConnected();
                         if(IsConnt == true){
                             Log.e(TAG,"OK");
@@ -496,7 +541,7 @@ public class MainActivity extends AppCompatActivity {
                     public void run() {
                         String [] strings = {"",".", ".." ,"..."};
                         tv1.setText("Connecting" + strings[x]);
-                        //sleep(1000);
+                        sleep(1000);
                         if (IsConnt){
                             tv1.setText("Connected");
                             Toast.makeText(MainActivity.this,"Connected",Toast.LENGTH_LONG).show();
@@ -531,7 +576,7 @@ public class MainActivity extends AppCompatActivity {
                 case 1:
                     try {
                         SetmodeStream = socket.getOutputStream();
-                        Setmode = "Y";
+                        Setmode = "C";
                         SetmodeStream.write((Setmode+"\n").getBytes("utf-8"));
                         SetmodeStream.flush();
                         Log.e(TAG,Setmode+SetmodeStream);
@@ -569,9 +614,20 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void run() {
             StringBuffer buffer = new StringBuffer();
-            byte[] bytes =new byte[1024];
+
+            boolean end = false;
+            String dataString ="";
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(1024);
+            ArrayList<Entry> val1 = new ArrayList<>();
+            int teim = 0;
+            LineData datass = lineChart.getData();
             while (ssz){
                 try {
+                    /*val1.add(new Entry(2,10));
+                    val1.add(new Entry(10,10));
+                    val1.add(new Entry(50,100));
+                    val1.add(new Entry(60,180));
+                    text_all(val1);*/
                     //BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                     //String ascii = reader.readLine();
                     //String txt="Sever send:";
@@ -581,25 +637,101 @@ public class MainActivity extends AppCompatActivity {
                     //InputStream stream = socket.getInputStream();
                     //InputStream input = null;
                     //input = new DataInputStream(socket.getInputStream());
-                    BufferedReader br = new BufferedReader(
+                    InputStream sis = socket.getInputStream();
+                    //BufferedInputStream in = new BufferedInputStream(socket.getInputStream());
+                    int size = sis.available();
+                    byte[] data = new byte[10];
+                    while(!end)
+                    {
+                        //sis.read(data);
+                        //byteArrayOutputStream.write(data, 0, size);
+
+                        dataString += byteArrayOutputStream.toString("UTF-8");
+                        byte[] bytes =new byte[4];
+                        sis.read(bytes);
+                        String value = new String(bytes, "UTF-8");
+                        int ss= bytes[1]&bytes[2];
+
+
+                        if (val1.isEmpty()) {
+                            lineChart.clear();
+                            teim+=1;
+                            val1.add(new Entry(teim,ss));
+                            System.out.println("エラー");
+                        }else {
+                            teim+=1;
+                            val1.add(new Entry(teim,ss));
+                            if (teim ==300){
+                                val1 = new ArrayList<>();
+                                teim = 1;
+                            }
+                        }
+                        /*LineData datass = lineChart.getData();
+
+                        if (val1.isEmpty()) {
+                            lineChart.clear();
+                        } else {
+                            // set data
+                            lineChart.setData(datass);
+
+                            if (ss == ss){
+                                teim+=1;
+                                val1.add(new Entry(teim,ss));
+                                if (teim ==300){
+                                    val1 = new ArrayList<>();
+                                    teim = 1;
+                                }
+                                text_all(val1);
+                            }
+                        }*/
+
+                        /*if (ss == ss){
+                            teim+=1;
+                            val1.add(new Entry(teim,ss));
+                            if (teim ==300){
+                                val1 = new ArrayList<>();
+                                teim = 1;
+                            }
+
+                        }*/
+                        text_all(val1);
+
+                        //value = Arrays.toString
+                        //buffer.append((int)Integer.parseInt(String.valueOf(ss), 16));
+                       // dataString = new String(String.valueOf(ss));
+
+                        /*if (dataString.length() == 100)
+                        {
+                            end = true;
+                        }*/
+                        //System.out.println("MESSAGE: " + Arrays.toString(data));
+                        System.out.println("Message: "+Arrays.toString(bytes) +" Message 2: "+ value +" Message 3: " + teim);
+                    }
+
+
+
+                    /*BufferedReader br = new BufferedReader(
                             new InputStreamReader(socket.getInputStream()));
-                    char[] m = new char[10];
+                    char[] m = new char[16];
                     br.read(m);
                     //byteToHex(br);
                     //String rec_msg = new String(m);
-                    bytes[i] = (byte)m[i];
+                    bytes[xz] = (byte)m[xz];
                     //BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                     //String clientInputStr = input.readUTF();
-                    for (int i = 0; i < m.length; i++) {
-                        hex = String.format("%02X", (int) m[i]);
-                        bytes[i] = (byte)m[i];
+                    for (int xz = 0; xz < m.length; xz++) {
+                        hex = String.format("%02X", (int) m[xz]);
+                        bytes[xz] = (byte)m[xz];
+                        //String tos = ;
+                        buffer.append(hex);
+                        System.out.println(hex);
                     }
-                    for (int i = 0; i < hex.length(); i+=2) {
-                        String str = hex.substring(i, i+2);
+                    for (int Z = 0; Z < hex.length(); Z+=2) {
+                        String str = hex.substring(Z, i+2);
                         buffer.append((char)Integer.parseInt(str, 16));
-                    }
+                    }*/
 
-                    System.out.println(buffer);
+                    //System.out.println(buffer);
                     //ystem.out.println("客戶端發過來的內容:" + clientInputStr);
                     //String receipt = new String(String.valueOf(stream.read()));
                     //buffer = new StringBuffer(String.valueOf(stream.read(bytes)));
@@ -626,7 +758,7 @@ public class MainActivity extends AppCompatActivity {
                     //String str = new String(bytes,0,bytes.length);
                     //int count = stream.read(data);
                     //Log.w(TAG, str);
-                    sleep(500);
+                    sleep(100);
                     //InputStream in = socket.getInputStream();
                     //byte[] rebyte = new byte[1024];
                     //in.read(rebyte);
@@ -642,16 +774,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-
-    public static String byteToHex(byte b) {
-        String hex = Integer.toHexString(b & 0xFF);
-        if (hex.length() < 2) {
-            hex = "0" + hex;
-        }
-        return hex;
-    }
-
-
 
 }
 
